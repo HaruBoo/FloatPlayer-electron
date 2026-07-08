@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>FloatPlayer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="root">
+    <div id="topBar" class="bar drag">
+      <div class="segmented no-drag">
+        <button class="seg-btn active" data-mode="youtube">YouTube</button>
+        <button class="seg-btn" data-mode="photo">写真</button>
+        <button class="seg-btn" data-mode="video">動画</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+
+    <div id="content">
+      <!-- YouTube -->
+      <section id="youtubeSection" class="mode-section active">
+        <div class="field-row no-drag">
+          <input id="youtubeInput" type="text" placeholder="YouTubeのURLまたは動画ID">
+          <button id="playButton">再生</button>
+        </div>
+        <div class="field-row no-drag">
+          <input id="apiKeyInput" type="text" placeholder="YouTube Data APIキー(チャプター取得用・任意)">
+        </div>
+        <div id="youtubeHint" class="hint">YouTubeのURLか動画IDを入力して「再生」を押してください</div>
+        <div id="youtubePlayerWrap" class="media-fill hidden">
+          <iframe id="youtubeFrame" allow="autoplay; encrypted-media" allowfullscreen frameborder="0"></iframe>
+        </div>
+      </section>
+
+      <!-- Photo -->
+      <section id="photoSection" class="mode-section">
+        <img id="photoImg" class="media-fill hidden" alt="">
+        <div id="photoHint" class="hint-block">
+          <div class="hint">「写真を選択」でスクリーンショットや写真を選ぶか、ここにファイルをドラッグ&ドロップ、または「貼り付け」してください</div>
+        </div>
+        <div class="overlay-buttons no-drag">
+          <button id="pickPhotoButton">写真を選択</button>
+          <button id="pastePhotoButton">貼り付け</button>
+        </div>
+      </section>
+
+      <!-- Video -->
+      <section id="videoSection" class="mode-section">
+        <video id="videoEl" class="media-fill hidden" loop autoplay></video>
+        <div id="videoHint" class="hint-block">
+          <div class="hint">「動画を選択」で保存済みの動画ファイルを選ぶか、ここにファイルをドラッグ&ドロップしてください</div>
+        </div>
+        <div class="overlay-buttons no-drag">
+          <button id="pickVideoButton">動画を選択</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="divider"></div>
+    <div id="bottomBar" class="bar">
+      <div class="slider-row no-drag">
+        <span class="icon" title="YouTube/写真/動画の透明度">▶</span>
+        <input id="mediaOpacitySlider" type="range" min="0.15" max="1" step="0.01" value="1">
+      </div>
+      <div class="slider-row no-drag">
+        <span class="icon" title="UI(ボタン・スライダーなど)の透明度">▭</span>
+        <input id="uiOpacitySlider" type="range" min="0.15" max="1" step="0.01" value="1">
+        <label class="click-through no-drag"><input id="clickThroughCheckbox" type="checkbox"> クリックスルー</label>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

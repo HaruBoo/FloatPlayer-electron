@@ -1,0 +1,44 @@
+{
+  "name": "floatplayer-electron",
+  "version": "0.1.0",
+  "description": "Cross-platform floating player for YouTube, photos, and videos (macOS + Windows)",
+  "main": "src/main/main.js",
+  "author": "HaruBoo",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder --mac --win"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.0"
+  },
+  "build": {
+    "appId": "com.haruboo.floatplayer",
+    "productName": "FloatPlayer",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg"]
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

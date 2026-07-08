@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Screenshot</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    -webkit-app-region: drag; /* UIなし、画像全体をそのままドラッグハンドルにする */
+  }
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    -webkit-user-drag: none;
+  }
+</style>
+</head>
+<body>
+  <img id="shot" alt="">
+  <script src="screenshot.js"></script>
+</body>
+</html>
