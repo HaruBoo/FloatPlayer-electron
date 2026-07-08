@@ -25,6 +25,12 @@ html, body {
 .drag { -webkit-app-region: drag; }
 .no-drag { -webkit-app-region: no-drag; }
 
+.drag-strip {
+  height: 10px;
+  flex-shrink: 0;
+  background: transparent;
+}
+
 .bar {
   display: flex;
   align-items: center;
@@ -67,6 +73,13 @@ html, body {
   flex: 1;
   position: relative;
   min-height: 0;
+  /* ウィンドウの背景が透明なため、何も読み込んでいない時の説明文が
+     デスクトップの背景に埋もれて読みにくかった。上下バーと同じ
+     半透明+ぼかしの背景を敷いて、Swift版の.regularMaterialに近づける。
+     写真/動画/YouTubeを読み込むとその不透明なコンテンツが上に重なるので、
+     この背景は「何も読み込んでいない時の説明文の背景」として機能する */
+  background: rgba(246, 247, 249, 0.82);
+  backdrop-filter: blur(20px);
 }
 
 .mode-section {

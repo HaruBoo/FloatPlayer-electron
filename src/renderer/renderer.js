@@ -79,6 +79,7 @@ async function loadYouTube() {
   window.floatplayer.updateChapters([]);
   document.getElementById('youtubeHint').classList.add('hidden');
   document.getElementById('youtubePlayerWrap').classList.remove('hidden');
+  setUIHidden(true); // 再生開始したらUIを隠し、映像だけにする(Swift版と同じ挙動)
 
   await loadYouTubeApiOnce();
 
@@ -254,9 +255,14 @@ window.floatplayer.onSetClickThrough((checked) => {
 // ---- UIの表示/非表示 --------------------------------------------------------
 
 let uiHidden = false;
-window.floatplayer.onToggleUIHidden(() => {
-  uiHidden = !uiHidden;
+function setUIHidden(hidden) {
+  uiHidden = hidden;
   document.getElementById('topBar').classList.toggle('hidden', uiHidden);
   document.getElementById('bottomBar').classList.toggle('hidden', uiHidden);
   document.querySelectorAll('.field-row').forEach((el) => el.classList.toggle('hidden', uiHidden));
-});
+  // topBarが唯一のドラッグ領域なので、隠している間はウィンドウを動かせなくなる。
+  // 代わりに細い帯を出しておく(Swift版のDragHandleと同じ考え方)
+  document.getElementById('dragStrip').classList.toggle('hidden', !uiHidden);
+}
+
+window.floatplayer.onToggleUIHidden(() => setUIHidden(!uiHidden));

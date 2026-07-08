@@ -10,6 +10,7 @@ let tray = null;
 let screenshotWatcher = null;
 let screenshotFloatingEnabled = true;
 let clipboardWatcherEnabled = false;
+let clickThroughEnabled = false;
 let clipboardWatcherTimer = null;
 let lastClipboardImageDataUrl = null;
 const floatingScreenshotWindows = new Set();
@@ -65,8 +66,9 @@ function buildTrayMenu() {
     {
       label: 'クリックスルー',
       type: 'checkbox',
-      checked: false,
+      checked: clickThroughEnabled,
       click: (item) => {
+        clickThroughEnabled = item.checked;
         mainWindow?.webContents.send('set-click-through', item.checked);
         mainWindow?.setIgnoreMouseEvents(item.checked, { forward: true });
       }
@@ -96,6 +98,10 @@ function buildTrayMenu() {
       }
     },
     {
+      label: '→ Cmd+Shift+4等で撮ると自動で画像が浮きます',
+      enabled: false
+    },
+    {
       label: 'クリップボードの画像も自動でフローティング表示',
       type: 'checkbox',
       checked: clipboardWatcherEnabled,
@@ -107,6 +113,10 @@ function buildTrayMenu() {
           stopClipboardWatcher();
         }
       }
+    },
+    {
+      label: '→ Cmd+Ctrl+Shift+4等(保存せずコピー)にも反応します',
+      enabled: false
     },
     { type: 'separator' },
     { label: '終了', click: () => app.quit() }
@@ -192,14 +202,27 @@ function stopScreenshotWatcher() {
 
 // ---- クリップボードの画像を自動でフローティング -------------------------------
 
+// Finderなどでファイルをコピーすると、そのファイルのアイコン画像がclipboard.readImage()で
+// 拾われてしまうことがある。ファイル参照が乗っている場合は「ファイルコピー」とみなし、
+// 画像コピーとしては扱わない。実機で確認したところ、macOSでファイルをコピーすると
+// availableFormats()には 'text/uri-list' が乗る(NSPasteboardの生の型名ではなく
+// Electron/Chromium側で正規化されたMIME形式の文字列になる)。'file'を含む形式名も
+// 念のため見ておく(Windows側の挙動は実機未確認のため保険的なフォールバック)
+function clipboardHasFileReference() {
+  return clipboard.availableFormats().some(
+    (format) => format === 'text/uri-list' || format.toLowerCase().includes('file')
+  );
+}
+
 // Cmd+Ctrl+Shift+4等ファイル保存を伴わないスクリーンショットは、フォルダ監視では
 // 検知できないためクリップボードの変化をポーリングして拾う。「スクショ由来」かを
 // 判別するAPIは無いため、新しい画像がコピーされた時点で全て拾う(既定オフの追加機能)
 function startClipboardWatcher() {
   stopClipboardWatcher();
-  const initial = clipboard.readImage();
-  lastClipboardImageDataUrl = initial.isEmpty() ? null : initial.toDataURL();
+  const initial = clipboardHasFileReference() ? null : clipboard.readImage();
+  lastClipboardImageDataUrl = initial && !initial.isEmpty() ? initial.toDataURL() : null;
   clipboardWatcherTimer = setInterval(() => {
+    if (clipboardHasFileReference()) return;
     const image = clipboard.readImage();
     if (image.isEmpty()) return;
     const dataUrl = image.toDataURL();
@@ -297,6 +320,9 @@ ipcMain.handle('pick-video', async () => {
 });
 
 ipcMain.handle('read-clipboard-image', () => {
+  // Finderでファイルをコピーした場合、そのファイルのアイコンが誤って
+  // 「貼り付け」されてしまわないよう、ファイル参照があるときは何もしない
+  if (clipboardHasFileReference()) return null;
   const image = clipboard.readImage();
   if (image.isEmpty()) return null;
   return image.toDataURL();
@@ -373,6 +399,9 @@ ipcMain.on('update-chapters', (_event, chapters) => {
 
 ipcMain.on('set-window-opacity-passthrough', (_event, ignore) => {
   mainWindow?.setIgnoreMouseEvents(ignore, { forward: true });
+  // パネル側のチェックボックスから変更された場合も、トレイのチェック状態を合わせる
+  clickThroughEnabled = ignore;
+  tray?.setContextMenu(buildTrayMenu());
 });
 
 // ---- App lifecycle ------------------------------------------------------

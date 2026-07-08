@@ -7,6 +7,8 @@
 </head>
 <body>
   <div id="root">
+    <!-- UIを隠している間もウィンドウを動かせるよう、上端に細い帯だけ残す(Swift版のDragHandleと同じ考え方) -->
+    <div id="dragStrip" class="drag-strip drag hidden"></div>
     <div id="topBar" class="bar drag">
       <div class="segmented no-drag">
         <button class="seg-btn active" data-mode="youtube">YouTube</button>
@@ -63,7 +65,7 @@
         <input id="mediaOpacitySlider" type="range" min="0.15" max="1" step="0.01" value="1">
       </div>
       <div class="slider-row no-drag">
-        <span class="icon" title="UI(ボタン・スライダーなど)の透明度">▭</span>
+        <span class="icon" title="UI(ボタン・スライダーなど)の透明度">UI</span>
         <input id="uiOpacitySlider" type="range" min="0.15" max="1" step="0.01" value="1">
         <label class="click-through no-drag"><input id="clickThroughCheckbox" type="checkbox"> クリックスルー</label>
       </div>
