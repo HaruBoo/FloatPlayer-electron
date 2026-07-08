@@ -15,9 +15,10 @@ This is a port of the [Swift/AppKit version (macOS-only)](https://github.com/Har
 - **YouTube playback** — Embedded playback via the official IFrame Player API (no downloading)
 - **Photo / screenshot display** — File picker, drag & drop, and clipboard paste
 - **Looping local video playback**
-- **Auto-floating screenshots** — Take a screenshot and a chrome-less, image-only window automatically pops up and can be dragged around (watches Desktop on macOS, Pictures/Screenshots on Windows)
+- **Auto-floating screenshots** — Take a screenshot and a chrome-less, image-only window automatically pops up (watches Desktop on macOS, Pictures/Screenshots on Windows). Drag anywhere to move, resize freely from any edge, and adjust opacity via scroll or the right-click menu
+- **Clipboard-only screenshots too** (opt-in, off by default) — Also picks up screenshots that only copy to the clipboard without saving a file (e.g. Cmd+Ctrl+Shift+4); enable it from the tray menu
 - **Two independent opacity sliders** — Fade the media and the UI separately
-- **Smart window layering** — Floats on top only while active, drops behind other apps otherwise
+- **Smart window layering** — Both the main panel and screenshot floating windows float on top only while active, and drop behind other apps otherwise
 - **Chapter extraction** — Pulls chapter timestamps from a video's description via the YouTube Data API v3
 
 ## Requirements

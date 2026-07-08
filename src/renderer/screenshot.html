@@ -16,7 +16,8 @@
   img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    /* 縦横比を保たず、ウィンドウの変形にそのまま追従して伸び縮みさせる */
+    object-fit: fill;
     -webkit-user-drag: none;
   }
 </style>

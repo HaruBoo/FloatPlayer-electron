@@ -9,6 +9,9 @@ let mainWindow = null;
 let tray = null;
 let screenshotWatcher = null;
 let screenshotFloatingEnabled = true;
+let clipboardWatcherEnabled = false;
+let clipboardWatcherTimer = null;
+let lastClipboardImageDataUrl = null;
 const floatingScreenshotWindows = new Set();
 
 // ---- Main panel -----------------------------------------------------------
@@ -92,6 +95,19 @@ function buildTrayMenu() {
         }
       }
     },
+    {
+      label: 'クリップボードの画像も自動でフローティング表示',
+      type: 'checkbox',
+      checked: clipboardWatcherEnabled,
+      click: (item) => {
+        clipboardWatcherEnabled = item.checked;
+        if (clipboardWatcherEnabled) {
+          startClipboardWatcher();
+        } else {
+          stopClipboardWatcher();
+        }
+      }
+    },
     { type: 'separator' },
     { label: '終了', click: () => app.quit() }
   ]);
@@ -159,6 +175,11 @@ function startScreenshotWatcher() {
     awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 100 }
   });
   screenshotWatcher.on('add', (filePath) => {
+    const basename = path.basename(filePath);
+    // スクリーンショットは書き込み中、"."で始まる一時的な隠しファイル名で
+    // 現れてから最終的なファイル名にリネームされることがあるため対象から除く
+    // (Swift版で実際に踏んだのと同じ競合状態)
+    if (basename.startsWith('.')) return;
     if (!IMAGE_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return;
     createFloatingScreenshotWindow(filePath);
   });
@@ -169,12 +190,52 @@ function stopScreenshotWatcher() {
   screenshotWatcher = null;
 }
 
+// ---- クリップボードの画像を自動でフローティング -------------------------------
+
+// Cmd+Ctrl+Shift+4等ファイル保存を伴わないスクリーンショットは、フォルダ監視では
+// 検知できないためクリップボードの変化をポーリングして拾う。「スクショ由来」かを
+// 判別するAPIは無いため、新しい画像がコピーされた時点で全て拾う(既定オフの追加機能)
+function startClipboardWatcher() {
+  stopClipboardWatcher();
+  const initial = clipboard.readImage();
+  lastClipboardImageDataUrl = initial.isEmpty() ? null : initial.toDataURL();
+  clipboardWatcherTimer = setInterval(() => {
+    const image = clipboard.readImage();
+    if (image.isEmpty()) return;
+    const dataUrl = image.toDataURL();
+    if (dataUrl === lastClipboardImageDataUrl) return;
+    lastClipboardImageDataUrl = dataUrl;
+    createFloatingScreenshotWindowFromImage(image);
+  }, 500);
+}
+
+function stopClipboardWatcher() {
+  if (clipboardWatcherTimer) clearInterval(clipboardWatcherTimer);
+  clipboardWatcherTimer = null;
+}
+
 let spawnIndex = 0;
 
 function createFloatingScreenshotWindow(imagePath) {
   const image = nativeImage.createFromPath(imagePath);
   if (image.isEmpty()) return;
+  const win = spawnFloatingScreenshotWindow(image);
+  win.webContents.once('did-finish-load', () => {
+    win.webContents.send('screenshot-image', imagePath);
+  });
+}
 
+// クリップボード由来の画像はファイルパスを持たないため、data URLとして直接渡す
+function createFloatingScreenshotWindowFromImage(image) {
+  if (image.isEmpty()) return;
+  const win = spawnFloatingScreenshotWindow(image);
+  const dataUrl = image.toDataURL();
+  win.webContents.once('did-finish-load', () => {
+    win.webContents.send('screenshot-image-dataurl', dataUrl);
+  });
+}
+
+function spawnFloatingScreenshotWindow(image) {
   const maxDimension = 420;
   const { width, height } = image.getSize();
   const scale = Math.min(1, maxDimension / Math.max(width, height));
@@ -204,12 +265,15 @@ function createFloatingScreenshotWindow(imagePath) {
   });
   win.setAlwaysOnTop(true, 'floating');
   win.loadFile(path.join(__dirname, '..', 'renderer', 'screenshot.html'));
-  win.webContents.once('did-finish-load', () => {
-    win.webContents.send('screenshot-image', imagePath);
-  });
+
+  // メインパネルと同じく、自分のウィンドウがアクティブな間だけ最前面に浮かせ、
+  // 他のアプリを使っている間はその後ろに回るようにする
+  win.on('focus', () => win.setAlwaysOnTop(true, 'floating'));
+  win.on('blur', () => win.setAlwaysOnTop(false));
 
   floatingScreenshotWindows.add(win);
   win.on('closed', () => floatingScreenshotWindows.delete(win));
+  return win;
 }
 
 // ---- IPC --------------------------------------------------------------
@@ -259,7 +323,18 @@ ipcMain.on('close-screenshot-window', (event) => {
 ipcMain.on('show-screenshot-context-menu', (event, dataUrl) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
+  const currentOpacity = win.getOpacity();
   const menu = Menu.buildFromTemplate([
+    {
+      label: '透明度',
+      submenu: [1, 0.75, 0.5, 0.25].map((value) => ({
+        label: `${Math.round(value * 100)}%`,
+        type: 'radio',
+        checked: Math.abs(currentOpacity - value) < 0.05,
+        click: () => win.setOpacity(value)
+      }))
+    },
+    { type: 'separator' },
     { label: '閉じる', click: () => win.close() },
     {
       label: '名前を付けて保存…',
@@ -282,6 +357,14 @@ ipcMain.on('show-screenshot-context-menu', (event, dataUrl) => {
     }
   ]);
   menu.popup({ window: win });
+});
+
+// スクロールでの連続的な透明度調整(右クリックメニューのプリセットを補う)
+ipcMain.on('adjust-screenshot-opacity', (event, delta) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  const next = win.getOpacity() + delta;
+  win.setOpacity(Math.min(1, Math.max(0.15, next)));
 });
 
 ipcMain.on('update-chapters', (_event, chapters) => {

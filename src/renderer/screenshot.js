@@ -16,10 +16,23 @@ window.floatplayer.onScreenshotImage((filePath) => {
   };
 });
 
+// クリップボード由来の画像はファイルパスが無いので、data URLをそのまま使う
+window.floatplayer.onScreenshotImageDataUrl((dataUrl) => {
+  document.getElementById('shot').src = dataUrl;
+  currentDataUrl = dataUrl;
+});
+
 document.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   window.floatplayer.showScreenshotContextMenu(currentDataUrl);
 });
+
+// 見えているUIを増やさずに透明度を変えられるよう、スクロールで調整する
+// (Swift版のonScrollOpacityと同じ操作感)
+document.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  window.floatplayer.setScreenshotOpacity(-e.deltaY * 0.001);
+}, { passive: false });
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') window.floatplayer.closeScreenshotWindow();

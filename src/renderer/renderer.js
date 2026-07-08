@@ -18,6 +18,9 @@ const sections = {
   video: document.getElementById('videoSection')
 };
 
+// 選択中のモードに合わせてラベルを切り替える(YouTubeは商標ロゴを避け汎用の再生アイコンにする)
+const MEDIA_OPACITY_LABELS = { youtube: '▶', photo: '写真', video: '動画' };
+
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll('.seg-btn').forEach((btn) => {
@@ -26,6 +29,7 @@ function setMode(mode) {
   Object.entries(sections).forEach(([key, el]) => {
     el.classList.toggle('active', key === mode);
   });
+  document.getElementById('mediaOpacityLabel').textContent = MEDIA_OPACITY_LABELS[mode];
 
   // 裏に回ったYouTubeは一時停止、戻したら再開(WKWebView版と同じ挙動)
   if (state.ytPlayer && state.ytReady) {
